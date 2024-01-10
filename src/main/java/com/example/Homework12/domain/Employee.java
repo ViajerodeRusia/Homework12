@@ -1,5 +1,4 @@
 package com.example.Homework12.domain;
-
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
@@ -16,14 +15,5 @@ public class Employee {
         this.department = department;
         this.wage = wage;
         this.number = Counter.getAndIncrement();
-    }
-
-    @Override
-    public String toString() {
-        return "<b> Employee n."+ number + "</b>" +
-                "<br> fullName= " + fullName +
-                ", <br> department=" + department +
-                ", <br> wage=" + wage +
-                ", <br> number=" + number +"<br>";
     }
 }

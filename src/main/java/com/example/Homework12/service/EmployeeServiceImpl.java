@@ -1,12 +1,12 @@
 package com.example.Homework12.service;
 
 import com.example.Homework12.domain.Employee;
-import com.example.Homework12.exception.EmployeeAlreadyAddedException;
+import com.example.Homework12.check.FullNameCheck;
+import com.example.Homework12.check.StorageCheck;
 import com.example.Homework12.exception.EmployeeNotFoundException;
-import com.example.Homework12.exception.EmployeeStorageIsFullException;
-import org.springframework.http.HttpStatus;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.SneakyThrows;
 import org.springframework.stereotype.Service;
-import org.springframework.web.bind.annotation.ResponseStatus;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -30,6 +30,7 @@ public class EmployeeServiceImpl implements EmployeeService {
             new Employee("Yoko Lennon", 2, 14_000),
             new Employee("James Dent", 1, 18_000),
             new Employee("Lily Blunt", 1, 21_000)));
+    ObjectMapper mapper = new ObjectMapper();
     public String menu() {
         return  "1. <b> Получить список всех сотрудников.</b> <br>" +
                 "2. <b> Получить список всех сотрудников конкретного департамента.</b> <br>" +
@@ -37,17 +38,14 @@ public class EmployeeServiceImpl implements EmployeeService {
                 "4. <b> Удалить сотрудника.</b> <br>" +
                 "5. <b> Найти сотрудника.</b> <br>";
     }
-    // TODO: ввести исключение на случ если массив переполнен - такого сл не будет
     public String addEmployee(String Name, String Surname) {
         String fullName = Name + " " +  Surname;
-        // TODO: можно ли занулить зп и департамент?
         //TODO: по умолчанию всех новых сотрудников направляем в 6й департамент со стартовой ЗП 10_000
-        if(employees.size() <= 20) {
-            if(!employees.contains(fullName)) {
-                employees.add(new Employee(fullName, 6, 10_000));
-                return "<b>Новый сотрудник успешно добавлен!</b>";
-            } else throw new EmployeeAlreadyAddedException();
-        } else throw new EmployeeStorageIsFullException();
+        if(FullNameCheck.isClone(fullName, employees) && StorageCheck.isStorageFull(employees)) {
+            employees.add(new Employee(fullName, 6, 10_000));
+            return "<b>Новый сотрудник успешно добавлен!</b>";
+        }
+        return "";
     }
     public String removeEmployee(String name, String surname) {
         String fullName = name + " " +surname;
@@ -58,14 +56,15 @@ public class EmployeeServiceImpl implements EmployeeService {
         employees.removeAll(listRemove);
         return "<b>Новый сотрудник успешно удален!</b>";
     }
-    // TODO: реализован поиск, прописано выбросывание ошибки
+    @SneakyThrows
     public String searchEmployee(String name, String surname) {
         String fullName = name + " " + surname;
         Employee employeeSearch = employees.stream()
                 .filter(employee -> employee.getFullName().equals(fullName))
                 .findFirst()
                 .orElseThrow(() -> new EmployeeNotFoundException());
-        return employeeSearch.toString();
+        String jsonData = mapper.writeValueAsString(employeeSearch);
+        return jsonData;
     }
 
     public String getAll(Integer command, Integer department) {
@@ -75,13 +74,19 @@ public class EmployeeServiceImpl implements EmployeeService {
             default -> throw new RuntimeException("Expected either /menu/2?department=departmentNumber or /menu/1");
         };
     }
+    @SneakyThrows
     public String list(int command) {
-        return employees.toString();
+        String jsonData = mapper.writeValueAsString(employees);
+        jsonData = jsonData.replaceAll("},", "}, <br>");
+        return jsonData;
     }
+    @SneakyThrows
     public String list(int command, int department) {
         List<Employee> searchDepartment = employees.stream()
                 .filter(employee -> employee.getDepartment() == department)
                 .toList();
-        return searchDepartment.toString();
+        String jsonData = mapper.writeValueAsString(searchDepartment);
+        jsonData = jsonData.replaceAll("},", "}, <br>");
+        return jsonData;
     }
 }
